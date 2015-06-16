@@ -62,19 +62,19 @@ compileOptions() {
 }
 compile() {
 	if [ $1 == "all" ]; then
-		cd working
+		cd "$WORKING"
 		for f in *."$2"; do "$APKTOOL" b -c "$WORKING"/"$f" -o "$OUT"/"$f";	done
 		cd ..
 	else
-		cd working
+		cd "$WORKING"
 		i=1
-		for f in *."$2"; do dirs[i++]="${f%/}"; done
-		for((i=1;i<=${#dirs[@]};i++)); do echo $i")" "${dirs[i]}";	done
+		for f in *."$2"; do compList[i++]="${f%/}"; done
+		for((i=1;i<=${#compList[@]};i++)); do echo $i")" "${compList[i]}";	done
 		echo "which $2 do you want?"
 		echo -n "> "
 		read i
-		"$APKTOOL" b -c "$WORKING"/"${dirs[$i]}" -o "$OUT"/"${dirs[$i]}"
-		cd ..
+		"$APKTOOL" b -c "$WORKING"/"${compList[$i]}" -o "$OUT"/"${compList[$i]}"
+		cd "$ROOT"
 	fi
 
 	compileOptions
@@ -102,13 +102,13 @@ decompile() {
 	else
 		cd "$2"
 		i=1
-		for f in *."$2"; do dirs[i++]="${f%/}"; done
-		for((i=1;i<=${#dirs[@]};i++)); do echo $i")" "${dirs[i]}";	done
+		for f in *."$2"; do decompList[i++]="${f%/}"; done
+		for((i=1;i<=${#decompList[@]};i++)); do echo $i")" "${decompList[i]}";	done
 		echo "which $2 do you want?"
 		echo -n "> "
 		read i
-		"$APKTOOL" d -b "${dirs[$i]}" -o "$WORKING"/"${dirs[$i]}"
-		cd ..
+		"$APKTOOL" d -b "${decompList[$i]}" -o "$WORKING"/"${decompList[$i]}"
+		cd "$ROOT"
 	fi
 
 	decompileOptions
@@ -128,21 +128,21 @@ signOptions() {
 
 sign() {
 	if [ $1 == "all" ]; then
-		cd out
-		for f in *.apk; do cp "$f" copy_"$f"; java -jar "$SIGNAPK" "$CERTIFICATE" "$KEY" copy_"$f"  "$f"; rm copy_"$f"; done	
+		cd "$OUT"
+		for f in "$OUT"/*.apk; do cp "$f" copy_"$f"; java -jar "$SIGNAPK" "$CERTIFICATE" "$KEY" copy_"$f"  "$f"; rm copy_"$f"; done	
 		cd ..
 	else
-		cd out
+		cd "$OUT"
 		i=1
-		for f in *.apk; do dirs[i++]="${f%/}"; done
-		for((i=1;i<=${#dirs[@]};i++)); do echo $i")" "${dirs[i]}";	done
+		for f in "$OUT"/*.apk; do signList[i++]="${f%/}"; done
+		for((i=1;i<=${#signList[@]};i++)); do echo $i")" "${signList[i]}";	done
 		echo "which apk do you want?"
 		echo -n "> "
 		read i
-		cp "${dirs[$i]}" copy_"${dirs[$i]}"
-		java -jar "$SIGNAPK" "$CERTIFICATE" "$KEY" copy_"${dirs[$i]}" "${dirs[$i]}"
-		rm copy_"${dirs[$i]}"
-		cd ..
+		cp "${signList[$i]}" copy_"${signList[$i]}"
+		java -jar "$SIGNAPK" "$CERTIFICATE" "$KEY" copy_"${signList[$i]}" "${signList[$i]}"
+		rm copy_"${signList[$i]}"
+		cd "$ROOT"
 	fi
 
 	signOptions
@@ -162,21 +162,21 @@ zipalignOptions() {
 
 zipalign() {
 	if [ $1 == "all" ]; then
-		cd out
-		for f in *.apk; do cp "$f" copy_"$f"; java -jar "$ZIPALIGN" -f 4 copy_"$f" "$f"; rm copy_"$f"; done	
+		cd "$OUT"
+		for f in "$OUT"/*.apk; do cp "$f" copy_"$f"; java -jar "$ZIPALIGN" -f 4 copy_"$f" "$f"; rm copy_"$f"; done	
 		cd ..
 	else
-		cd out
+		cd "$OUT"
 		i=1
-		for f in *.apk; do dirs[i++]="${f%/}"; done
-		for((i=1;i<=${#dirs[@]};i++)); do echo $i")" "${dirs[i]}";	done
+		for f in "$OUT"/*.apk; do zipList[i++]="${f%/}"; done
+		for((i=1;i<=${#zipList[@]};i++)); do echo $i")" "${zipList[i]}";	done
 		echo "which apk do you want?"
 		echo -n "> "
 		read i
-		cp "${dirs[$i]}" copy_"${dirs[$i]}"
-		java -jar "$ZIPALIGN" -f 4 copy_"${dirs[$i]}" "${dirs[$i]}"
-		rm copy_"${dirs[$i]}"
-		cd ..
+		cp "${zipList[$i]}" copy_"${zipList[$i]}"
+		java -jar "$ZIPALIGN" -f 4 copy_"${zipList[$i]}" "${zipList[$i]}"
+		rm copy_"${zipList[$i]}"
+		cd "$ROOT"
 	fi
 
 	zipalignOptions
@@ -198,13 +198,13 @@ framework() {
 	if [ "$1" == "existing" ]; then
 		cd "$FRAMEWORKS"
 		i=1
-		for f in *.apk; do dirs[i++]="${f%/}"; done
-		for((i=1;i<=${#dirs[@]};i++)); do echo $i")" "${dirs[i]}";	done
+		for f in *.apk; do frameList[i++]="${f%/}"; done
+		for((i=1;i<=${#frameList[@]};i++)); do echo $i")" "${frameList[i]}";	done
 		echo "which framework do you want?"
 		echo -n "> "
 		read i
-		"$APKTOOL" if "${dirs[$i]}"
-		cd ..
+		"$APKTOOL" if "${frameList[$i]}"
+		cd "$ROOT"
 	else 
 		if "$ADB" devices 2>&1 | (tail -n2) | grep "device" >> /dev/null; then
 			echo "Device present"
