@@ -1,0 +1,5 @@
+apk/*.apk
+jar/*.jar
+out/*.apk
+out/*.jar
+frameworks/*.apk

@@ -1,0 +1,256 @@
+#!/bin/bash
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
+  ROOT="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+  SOURCE="$(readlink "$SOURCE")"
+  [[ $SOURCE != /* ]] && SOURCE="$ROOT/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+done
+ROOT="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+ADB="$ROOT"/tools/adb
+SIGNAPK="$ROOT"/tools/signapk.jar
+APKTOOL="$ROOT"/tools/apktool
+ZIPALIGN="$ROOT"/tools/zipalign
+CERTIFICATE="$ROOT"/tools/certificate.pem
+KEY="$ROOT"/tools/key.pk8
+FRAMEWORKS="$ROOT"/frameworks
+WORKING="$ROOT"/working
+OUT="$ROOT"/out
+
+startOptions() {
+	echo " "
+	echo "What would you like to do?"
+	select start in "Compile" "Decompile" "Sign" "Zipalign" "Framework Options" "Delete Files Options" "Exit"; do
+	    case $start in
+	        "Compile" ) compileOptions; break;;
+			"Decompile" ) decompileOptions; break;;
+			"Sign" ) signOptions; break;;
+			"Zipalign" ) zipalignOptions; break;;
+			"Framework Options" ) frameworkOptions; break;;
+			"Delete Files Options" ) deleteOptions; break;;
+			"Exit" ) exit 0; break;;
+	    esac
+	done
+}
+
+compileOptions() {
+	echo " "
+	echo "What would you like to do?"
+	select compile in "Compile all APKs in working" "Compile a single APK" "Compile all JARs in working" "Compile a single JAR" "Go back"; do
+	    case $compile in
+	        "Compile all APKs in working" ) compile all apk; break;;
+			"Compile a single APK" ) compile single apk; break;;
+			"Compile all JARs in working" ) compile all jar; break;;
+			"Compile a single JAR" ) compile single jar; break;;
+			"Go back" ) startOptions; break;;
+	    esac
+	done
+}
+compile() {
+	if [ $1 == "all" ]; then
+		cd working
+		for f in *."$2"; do "$APKTOOL" b -c "$WORKING"/"$f" -o "$OUT"/"$f";	done
+		cd ..
+	else
+		cd working
+		i=1
+		for f in *."$2"; do dirs[i++]="${f%/}"; done
+		for((i=1;i<=${#dirs[@]};i++)); do echo $i")" "${dirs[i]}";	done
+		echo "which $2 do you want?"
+		echo -n "> "
+		read i
+		"$APKTOOL" b -c "$WORKING"/"${dirs[$i]}" -o "$OUT"/"${dirs[$i]}"
+		cd ..
+	fi
+
+	compileOptions
+}
+
+decompileOptions() {
+	echo " "
+	echo "What would you like to do?"
+	select decompile in "Decompile all APKs" "Decompile a single APK" "Decompile all JARs" "Decompile a single JAR" "Go back"; do
+	    case $decompile in
+	        "Decompile all APKs" ) decompile all apk; break;;
+			"Decompile a single APK" ) decompile single apk; break;;
+			"Decompile all JARs" ) decompile all jar; break;;
+			"Decompile a single JAR" ) decompile single jar; break;;
+			"Go back" ) startOptions; break;;
+	    esac
+	done
+}
+
+decompile() {
+	if [ $1 == "all" ]; then
+		cd "$2"
+		for f in *."$2"; do "$APKTOOL" d -b "$f" -o "$WORKING"/"$f"; done
+		cd ..
+	else
+		cd "$2"
+		i=1
+		for f in *."$2"; do dirs[i++]="${f%/}"; done
+		for((i=1;i<=${#dirs[@]};i++)); do echo $i")" "${dirs[i]}";	done
+		echo "which $2 do you want?"
+		echo -n "> "
+		read i
+		"$APKTOOL" d -b "${dirs[$i]}" -o "$WORKING"/"${dirs[$i]}"
+		cd ..
+	fi
+
+	decompileOptions
+}
+
+signOptions() {
+	echo " "
+	echo "What would you like to do?"
+	select sign in "Sign all in out" "Sign a single file in out" "Go back"; do
+	    case $sign in
+	        "Sign all in out" )sign all; break;;
+			"Sign a single file in out" ) sign single; break;;
+			"Go back" ) startOptions; break;;
+	    esac
+	done
+}
+
+sign() {
+	if [ $1 == "all" ]; then
+		cd out
+		for f in *.apk; do cp "$f" copy_"$f"; java -jar "$SIGNAPK" "$CERTIFICATE" "$KEY" copy_"$f"  "$f"; rm copy_"$f"; done	
+		cd ..
+	else
+		cd out
+		i=1
+		for f in *.apk; do dirs[i++]="${f%/}"; done
+		for((i=1;i<=${#dirs[@]};i++)); do echo $i")" "${dirs[i]}";	done
+		echo "which apk do you want?"
+		echo -n "> "
+		read i
+		cp "${dirs[$i]}" copy_"${dirs[$i]}"
+		java -jar "$SIGNAPK" "$CERTIFICATE" "$KEY" copy_"${dirs[$i]}" "${dirs[$i]}"
+		rm copy_"${dirs[$i]}"
+		cd ..
+	fi
+
+	signOptions
+}
+
+zipalignOptions() {
+	echo " "
+	echo "What would you like to do?"
+	select zipalign in "Zipalign all in out" "Zipalign a single file in out" "Go back"; do
+	    case $zipalign in
+	        "Zipalign all in out" ) break;;
+			"Zipalign a single file in out" ) break;;
+			"Go back" ) startOptions; break;;
+	    esac
+	done
+}
+
+zipalign() {
+	if [ $1 == "all" ]; then
+		cd out
+		for f in *.apk; do cp "$f" copy_"$f"; java -jar "$ZIPALIGN" -f 4 copy_"$f" "$f"; rm copy_"$f"; done	
+		cd ..
+	else
+		cd out
+		i=1
+		for f in *.apk; do dirs[i++]="${f%/}"; done
+		for((i=1;i<=${#dirs[@]};i++)); do echo $i")" "${dirs[i]}";	done
+		echo "which apk do you want?"
+		echo -n "> "
+		read i
+		cp "${dirs[$i]}" copy_"${dirs[$i]}"
+		java -jar "$ZIPALIGN" -f 4 copy_"${dirs[$i]}" "${dirs[$i]}"
+		rm copy_"${dirs[$i]}"
+		cd ..
+	fi
+
+	zipalignOptions
+}
+
+frameworkOptions() {
+	echo " "
+	echo "What would you like to do?"
+	select framework in "Pull and set framework from phone" "Set existing framework" "Go back"; do
+	    case $framework in
+	        "Pull and set framework from phone" ) framework ;break;;
+			"Set existing framework" ) framework existing; break;;
+			"Go back" ) startOptions; break;;
+	    esac
+	done
+}
+
+framework() {
+	if [ "$1" == "existing" ]; then
+		cd "$FRAMEWORKS"
+		i=1
+		for f in *.apk; do dirs[i++]="${f%/}"; done
+		for((i=1;i<=${#dirs[@]};i++)); do echo $i")" "${dirs[i]}";	done
+		echo "which framework do you want?"
+		echo -n "> "
+		read i
+		"$APKTOOL" if "${dirs[$i]}"
+		cd ..
+	else 
+		if "$ADB" devices 2>&1 | (tail -n2) | grep "device" >> /dev/null; then
+			echo "Device present"
+			"$ADB" pull /system/framework/framework-res.apk "$FRAMEWORKS"/temp.apk
+			echo -e "\e[1;91mChoose a new descriptive name for this framework. For instance \"S6_TouchWiz_5.1.1\", or \"CM_M9_5.1.1\". Do not add \"framework-res\", as this is added automatically"
+			echo -e "\e[0m "
+			read newName
+			mv "$FRAMEWORKS"/temp.apk "$FRAMEWORKS"/framework-res_"$newName".apk
+			"$APKTOOL" if "$FRAMEWORKS"/framework-res_"$newName".apk
+		else 
+			echo "Device not present, found or ADB debugging not enabled"
+		fi
+	fi
+
+	frameworkOptions
+}
+
+deleteOptions() {
+	echo " "
+	echo "What would you like to do?"
+	select delete in "Delete all in apk" "Delete all in jar" "Delete all in working" "Delete all in out" "Delete all" "Go back"; do
+	    case $delete in
+	        "Delete all in apk" ) delete apk ;break;;
+			"Delete all in jar" ) delete jar; break;;
+			"Delete all in working" ) delete working; break;;
+			"Delete all in out" ) delete out; break;;
+			"Delete all" ) delete all; break;;
+			"Go back" ) startOptions; break;;
+	    esac
+	done
+}
+
+delete() {
+
+	echo " "
+	echo "What would you like to do?"
+	select sure in "Yes" "No"; do
+	    case $sure in
+	        "Yes" ) AREYOUSURE=1 ;break;;
+			"No" ) AREYOUSURE=0; break;;
+	    esac
+	done
+	if [ "$AREYOUSURE" == "1" ]; then 
+		if [ "$1" == "all" ]; then
+			find "$ROOT"/apk/ -type f -not -name '.keep' -delete
+			find "$ROOT"/jar/ -type f -not -name '.keep' -delete
+			find "$ROOT"/out/ -type f -not -name '.keep' -delete
+			find "$ROOT"/working/ -type f -not -name '.keep' -delete
+		else 
+			find "$ROOT"/"$1"/ -type f -not -name '.keep' -delete
+		fi 
+	fi
+	deleteOptions
+}
+
+echo " "
+echo -e "\e[1;91mMatt Booth's apktool script"
+echo -e "\e[0m "
+echo -e "\e[1;91mPlease make your selections carefully"
+echo -e "\e[0m "
+
+startOptions
+
+exit 0
