@@ -249,12 +249,12 @@ delete() {
 	done
 	if [ "$AREYOUSURE" == "1" ]; then 
 		if [ "$1" == "all" ]; then
-			find "$ROOT"/apk/ -type f -not -name '.keep' -delete
-			find "$ROOT"/jar/ -type f -not -name '.keep' -delete
-			find "$ROOT"/out/ -type f -not -name '.keep' -delete
-			find "$ROOT"/working/ -type f -not -name '.keep' -delete
+			ls -1  "$ROOT"/apk | grep -E -v '.keep' | xargs rm -f
+			ls -1  "$ROOT"/jar | grep -E -v '.keep' | xargs rm -f
+			ls -1  "$ROOT"/out | grep -E -v '.keep' | xargs rm -f
+			ls -1  "$ROOT"/working | grep -E -v '.keep' | xargs rm -f
 		else 
-			find "$ROOT"/"$1"/ -type f -not -name '.keep' -delete
+			ls -1  "$ROOT"/"$1" | grep -E -v '.keep' | xargs rm -f
 		fi 
 	fi
 	deleteOptions
