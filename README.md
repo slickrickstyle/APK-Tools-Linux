@@ -22,3 +22,7 @@ From there you have several options, which explain much of the function.
 - Zipalign APKs singly or in a batch
 - Pull a framework-res.apk from your phone and set it
 - Set an already provided framework-res.apk on the frameworks/ folder
+
+## Licence
+
+[Licence](LICENCE)
