@@ -20,7 +20,7 @@
 
 # Set up prog to be the path of this script, including following symlinks,
 # and set up progdir to be the fully-qualified pathname of its directory.
-javabin=/usr/lib/jvm/java-7-openjdk-amd64/bin/java
+javabin=java
 prog="$0"
 while [ -h "${prog}" ]; do
     newProg=`/bin/ls -ld "${prog}"`
